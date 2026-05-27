@@ -15,13 +15,18 @@ if st.button("Transcribir ahora"):
     if url_video:
         with st.spinner("Procesando video... Esto puede tardar según la duración."):
             try:
-                # yt-dlp detecta automáticamente la plataforma por la URL
+                # Configuramos yt-dlp para ser menos detectable como bot
                 ydl_opts = {
                     'format': 'best', 
                     'outtmpl': 'temp_audio.%(ext)s',
                     'quiet': True,
                     'no_warnings': True,
-                    'user_agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/120.0.0.0',
+                    # Forzamos una identidad de navegador muy específica
+                    'user_agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
+                    # Añadimos --no-check-certificate para evitar problemas de handshake
+                    'nocheckcertificate': True,
+                    # Intentamos usar el extractor de forma más directa
+                    'extractor_args': {'tiktok': {'webbrowser': 'chrome'}},
                 }
                 
                 with yt_dlp.YoutubeDL(ydl_opts) as ydl:
@@ -41,6 +46,6 @@ if st.button("Transcribir ahora"):
                     
             except Exception as e:
                 st.error(f"Error procesando el video: {e}")
-                st.write("Asegúrate de que el video sea público y la URL correcta.")
+                st.write("El error 403 suele significar que el sitio bloqueó la IP del servidor. Prueba con otro enlace o intenta más tarde.")
     else:
         st.warning("Por favor, introduce una URL válida.")
