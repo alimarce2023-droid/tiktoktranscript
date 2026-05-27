@@ -17,7 +17,6 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # 1. AUTENTICACIÓN
-# Definimos el usuario con nombre para que aparezca en la interfaz
 config = {
     'credentials': {
         'usernames': {
@@ -30,7 +29,6 @@ config = {
     'cookie': {'name': 'pro_transcribe', 'key': 'secret_key', 'expiry_days': 30}
 }
 
-# Inicializamos el autenticador
 authenticator = stauth.Authenticate(
     config['credentials'],
     config['cookie']['name'],
@@ -38,8 +36,14 @@ authenticator = stauth.Authenticate(
     config['cookie']['expiry_days']
 )
 
-# Login
-name, authentication_status, username = authenticator.login('Login', 'main')
+# Corrección: Usamos el método .login() directamente, 
+# si falla, es que la versión requiere el nombre del formulario explícito.
+try:
+    # Intento de login estándar
+    name, authentication_status, username = authenticator.login()
+except:
+    # Fallback para versiones anteriores
+    name, authentication_status, username = authenticator.login('Login', 'main')
 
 if authentication_status:
     st.sidebar.write(f"Bienvenido, **{name}**")
