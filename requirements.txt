@@ -4,3 +4,5 @@ openai-whisper
 ffmpeg-python
 streamlit-authenticator
 pyyaml
+gspread
+oauth2client
