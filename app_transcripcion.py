@@ -1,3 +1,4 @@
+# --- APLICACIÓN DE TRANSCRIPCIÓN TIKTOK (VERSIÓN APP) ---
 import streamlit as st
 import yt_dlp
 import whisper
@@ -10,32 +11,28 @@ url_video = st.text_input("URL del video de TikTok:")
 
 if st.button("Transcribir ahora"):
     if url_video:
-        with st.spinner("Procesando video..."):
+        with st.spinner("Procesando video... esto puede tardar un poco."):
             try:
-                # Quitamos los 'postprocessors' que causan el error de ffprobe
                 ydl_opts = {
-                    'format': 'bestaudio',
-                    'outtmpl': 'temp_audio.%(ext)s',
+                    'format': 'bestaudio/best',
+                    'outtmpl': 'temp_audio.mp3',
                     'extractor_args': {'tiktok': {'impersonate': 'chrome'}},
+                    'postprocessors': [{'key': 'FFmpegExtractAudio', 'preferredcodec': 'mp3'}],
                 }
                 
                 with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-                    info = ydl.extract_info(url_video, download=True)
-                    filename = ydl.prepare_filename(info)
+                    ydl.download([url_video])
                 
-                # Transcripción
                 model = whisper.load_model("base")
-                resultado = model.transcribe(filename)
+                resultado = model.transcribe("temp_audio.mp3")
                 
                 st.success("¡Transcripción lista!")
                 st.text_area("Resultado:", resultado["text"], height=300)
                 
-                # Limpieza
-                if os.path.exists(filename):
-                    os.remove(filename)
+                if os.path.exists("temp_audio.mp3"):
+                    os.remove("temp_audio.mp3")
                     
             except Exception as e:
-                st.error(f"Error técnico: {e}")
-                st.write("Intenta con otro video o verifica que el link sea correcto.")
+                st.error(f"Error: {e}")
     else:
         st.warning("Por favor, introduce una URL válida.")
