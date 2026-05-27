@@ -1,4 +1,3 @@
-# --- APLICACIÓN DE TRANSCRIPCIÓN TIKTOK (VERSIÓN APP) ---
 import streamlit as st
 import yt_dlp
 import whisper
@@ -11,28 +10,32 @@ url_video = st.text_input("URL del video de TikTok:")
 
 if st.button("Transcribir ahora"):
     if url_video:
-        with st.spinner("Procesando video... esto puede tardar un poco."):
+        with st.spinner("Procesando video..."):
             try:
+                # Opciones para descargar sin post-procesamiento (evita errores de ffmpeg)
                 ydl_opts = {
-                    'format': 'bestaudio/best',
-                    'outtmpl': 'temp_audio.mp3',
+                    'format': 'bestaudio',
+                    'outtmpl': 'temp_audio.%(ext)s',
                     'extractor_args': {'tiktok': {'impersonate': 'chrome'}},
-                    'postprocessors': [{'key': 'FFmpegExtractAudio', 'preferredcodec': 'mp3'}],
                 }
                 
                 with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-                    ydl.download([url_video])
+                    info = ydl.extract_info(url_video, download=True)
+                    filename = ydl.prepare_filename(info)
                 
+                # Cargar el modelo Whisper y transcribir directamente el archivo descargado
                 model = whisper.load_model("base")
-                resultado = model.transcribe("temp_audio.mp3")
+                resultado = model.transcribe(filename)
                 
                 st.success("¡Transcripción lista!")
                 st.text_area("Resultado:", resultado["text"], height=300)
                 
-                if os.path.exists("temp_audio.mp3"):
-                    os.remove("temp_audio.mp3")
+                # Limpieza del archivo temporal
+                if os.path.exists(filename):
+                    os.remove(filename)
                     
             except Exception as e:
-                st.error(f"Error: {e}")
+                st.error(f"Error técnico: {e}")
+                st.write("Intenta con otro video o verifica que el link sea correcto.")
     else:
         st.warning("Por favor, introduce una URL válida.")
