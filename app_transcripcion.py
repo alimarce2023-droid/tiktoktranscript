@@ -1,48 +1,57 @@
-import streamlit as st
+mport streamlit as st
 import yt_dlp
 import whisper
 import os
 
 # Configuración de la página
-st.set_page_config(page_title="Universal Transcript AI", page_icon="🌐")
+st.set_page_config(page_title="ProTranscribe AI", layout="wide")
 
-st.title("🌐 Universal Transcript AI")
-st.write("Pega el enlace de un video y obtén la transcripción.")
+# Estilos CSS con tus colores de marca
+st.markdown("""
+    <style>
+    .stApp { background-color: #000000; color: #FFFFFF; }
+    .stSidebar { background-color: #4D184A; }
+    .stButton>button { background-color: #84139B; color: #FFFFFF; border-radius: 10px; font-weight: bold; }
+    .stTextInput>div>div>input { border: 2px solid #CD41C6; background-color: #1A1A1A; color: white; }
+    h1, h2, h3 { color: #FFCC00; }
+    </style>
+""", unsafe_allow_html=True)
 
-url_video = st.text_input("URL del video:")
+# Menú de navegación
+menu = st.sidebar.radio("Navegación", ["Dashboard", "Nueva Transcripción", "Mi Cuenta"])
 
-if st.button("Transcribir ahora"):
-    if url_video:
-        with st.spinner("Procesando video... Esto puede tardar según la duración."):
-            try:
-                # Configuramos yt-dlp con mayor flexibilidad para YouTube
-                ydl_opts = {
-                    'format': 'bestaudio/best', 
-                    'outtmpl': 'temp_audio.%(ext)s',
-                    'quiet': True,
-                    'no_warnings': True,
-                    'user_agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
-                    'nocheckcertificate': True,
-                    'ignoreerrors': False,
-                }
-                
-                with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-                    info = ydl.extract_info(url_video, download=True)
-                    filename = ydl.prepare_filename(info)
-                
-                # Carga del modelo Whisper
-                model = whisper.load_model("base")
-                resultado = model.transcribe(filename)
-                
-                st.success("¡Transcripción lista!")
-                st.text_area("Resultado:", resultado["text"], height=300)
-                
-                # Limpieza
-                if os.path.exists(filename):
-                    os.remove(filename)
+if menu == "Dashboard":
+    st.title("Hola de nuevo 👋")
+    st.write("Bienvenido a tu panel de control.")
+    st.info("Aquí aparecerá tu historial de transcripciones próximamente.")
+
+elif menu == "Nueva Transcripción":
+    st.title("🎙️ Nueva Transcripción")
+    url = st.text_input("Pega aquí la URL del video (TikTok, YouTube, FB, IG):")
+    
+    if st.button("Transcribir ahora"):
+        if url:
+            with st.spinner("Procesando con IA..."):
+                try:
+                    # Lógica de descarga
+                    ydl_opts = {'format': 'bestaudio/best', 'outtmpl': 'temp_audio.%(ext)s', 'quiet': True}
+                    with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+                        info = ydl.extract_info(url, download=True)
+                        filename = ydl.prepare_filename(info)
                     
-            except Exception as e:
-                st.error(f"Error procesando el video: {e}")
-                st.write("YouTube puede bloquear el acceso a servidores de la nube. Si el error persiste, intenta con un enlace corto o asegúrate de que el video no tenga restricciones de edad.")
-    else:
-        st.warning("Por favor, introduce una URL válida.")
+                    # Lógica de transcripción
+                    model = whisper.load_model("base")
+                    res = model.transcribe(filename)
+                    
+                    st.success("¡Transcripción completa!")
+                    st.text_area("Resultado:", res["text"], height=300)
+                    
+                    if os.path.exists(filename): os.remove(filename)
+                except Exception as e:
+                    st.error(f"Error: {e}")
+        else:
+            st.warning("Ingresa una URL válida.")
+
+elif menu == "Mi Cuenta":
+    st.title("Configuración")
+    st.write("Tu plan actual: **Gratuito**")
