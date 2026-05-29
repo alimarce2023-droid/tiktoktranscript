@@ -1,33 +1,44 @@
 import streamlit as st
 import yt_dlp
+import whisper
 import os
 
-st.set_page_config(page_title="Debug ProTranscribe", layout="wide")
+st.set_page_config(page_title="ProTranscribe Pro", layout="wide")
 
-st.title("Debug: ProTranscribe")
-url_video = st.text_input("URL del video:")
+st.title("ProTranscribe - Impulza Digital")
 
-if st.button("Probar Descarga"):
-    if url_video:
-        with st.spinner("Diagnosticando..."):
+# Opción 1: URL
+url = st.text_input("URL del video (Si falla, usa la subida de abajo):")
+
+# Opción 2: Subida manual (El plan infalible)
+archivo = st.file_uploader("O sube el video/audio desde tu PC:", type=['mp4', 'mp3', 'wav'])
+
+if st.button("Transcribir"):
+    # Elegimos el archivo (URL o Subido)
+    archivo_a_procesar = None
+    
+    if archivo:
+        archivo_a_procesar = "temp_local.mp3"
+        with open(archivo_a_procesar, "wb") as f:
+            f.write(archivo.getbuffer())
+    elif url:
+        with st.spinner("Intentando descargar de la URL..."):
             try:
-                # Limpiamos /tmp antes de probar
-                for f in os.listdir('/tmp/'):
-                    if f.startswith('audio_final'):
-                        os.remove(os.path.join('/tmp/', f))
-                
-                ydl_opts = {
-                    'format': 'bestaudio/best',
-                    'outtmpl': '/tmp/audio_final',
-                    'quiet': False, # CAMBIADO A FALSE para ver errores en los logs
-                }
-                
+                ydl_opts = {'format': 'bestaudio', 'outtmpl': '/tmp/audio_final'}
                 with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-                    info = ydl.extract_info(url_video, download=True)
-                    st.write("Info extraída. Revisando archivos en /tmp/...")
-                
-                archivos_en_tmp = os.listdir('/tmp/')
-                st.write(f"Archivos encontrados en /tmp/: {archivos_en_tmp}")
-                
+                    ydl.download([url])
+                if os.path.exists('/tmp/audio_final.mp3'):
+                    archivo_a_procesar = '/tmp/audio_final.mp3'
+                else:
+                    st.error("No se pudo descargar. Por favor, descarga el video en tu PC y súbelo aquí.")
             except Exception as e:
-                st.error(f"Error detallado: {e}")
+                st.error(f"Error de descarga: {e}")
+
+    # Procesar
+    if archivo_a_procesar:
+        with st.spinner("Transcribiendo..."):
+            model = whisper.load_model("base")
+            res = model.transcribe(archivo_a_procesar)
+            st.text_area("Resultado:", res["text"], height=300)
+            if os.path.exists(archivo_a_procesar):
+                os.remove(archivo_a_procesar)
