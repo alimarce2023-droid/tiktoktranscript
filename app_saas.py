@@ -44,10 +44,10 @@ if st.button("Transcribir ahora"):
     if url_video:
         with st.spinner("Procesando video... Esto puede tardar según la duración."):
             try:
-                # Tu configuración robusta que ya probaste
+                # Forzamos una extensión clara para evitar el error de archivo no encontrado
                 ydl_opts = {
                     'format': 'bestaudio/best', 
-                    'outtmpl': 'temp_audio.%(ext)s',
+                    'outtmpl': 'temp_audio.mp3',
                     'quiet': True,
                     'no_warnings': True,
                     'user_agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
@@ -56,8 +56,12 @@ if st.button("Transcribir ahora"):
                 }
                 
                 with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-                    info = ydl.extract_info(url_video, download=True)
-                    filename = ydl.prepare_filename(info)
+                    ydl.download([url_video])
+                
+                filename = 'temp_audio.mp3'
+                
+                if not os.path.exists(filename):
+                    raise Exception("No se pudo descargar el audio. Verifica la URL.")
                 
                 # Carga del modelo Whisper
                 model = whisper.load_model("base")
