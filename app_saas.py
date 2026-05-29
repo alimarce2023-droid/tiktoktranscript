@@ -3,23 +3,45 @@ import yt_dlp
 import whisper
 import os
 
-# Configuración visual Impulza Digital
+# Configuración de página con tus colores de marca
 st.set_page_config(page_title="ProTranscribe por Impulza Digital", layout="wide")
-st.markdown("<style>.stApp { background-color: #0d0d0d; color: #ffffff; }</style>", unsafe_allow_html=True)
 
-st.title("🌐 Universal Transcript AI")
+st.markdown("""
+    <style>
+    .stApp { background-color: #0d0d0d; color: #ffffff; }
+    h1 { color: #FFCC00 !important; text-transform: uppercase; font-weight: 800; }
+    .stTextInput label { color: #CD41C6 !important; font-weight: bold !important; }
+    .stButton>button { 
+        background-color: #FFCC00 !important; 
+        color: #000000 !important; 
+        font-weight: 800 !important; 
+        border-radius: 10px !important;
+        border: 2px solid #84139B !important;
+    }
+    .stTextInput>div>div>input {
+        background-color: #1a1a1a !important; 
+        color: #ffffff !important; 
+        border: 2px solid #84139B !important; 
+        border-radius: 10px !important;
+    }
+    </style>
+""", unsafe_allow_html=True)
+
+st.title("ProTranscribe - Impulza Digital")
+st.write("Pega el enlace de un video y obtén la transcripción.")
 
 url_video = st.text_input("URL del video:")
 
 if st.button("Transcribir ahora"):
     if url_video:
-        with st.spinner("Procesando..."):
+        with st.spinner("Procesando video... Esto puede tardar según la duración."):
             try:
-                # Usamos /tmp por ser la única ruta con permisos totales en Streamlit Cloud
+                # Configuramos yt-dlp con las cabeceras que ya sabemos que funcionan
                 ydl_opts = {
                     'format': 'bestaudio/best', 
-                    'outtmpl': '/tmp/temp_audio', # Sin extensión, dejamos que ffmpeg lo gestione
+                    'outtmpl': '/tmp/temp_audio', # Ruta segura en /tmp
                     'quiet': True,
+                    'no_warnings': True,
                     'postprocessors': [{
                         'key': 'FFmpegExtractAudio',
                         'preferredcodec': 'mp3',
@@ -35,19 +57,20 @@ if st.button("Transcribir ahora"):
                 with yt_dlp.YoutubeDL(ydl_opts) as ydl:
                     ydl.download([url_video])
                 
-                # El archivo resultante siempre será /tmp/temp_audio.mp3
                 filename = "/tmp/temp_audio.mp3"
                 
+                # Carga del modelo Whisper
                 model = whisper.load_model("base")
                 resultado = model.transcribe(filename)
                 
                 st.success("¡Transcripción lista!")
                 st.text_area("Resultado:", resultado["text"], height=300)
                 
+                # Limpieza
                 if os.path.exists(filename):
                     os.remove(filename)
                     
             except Exception as e:
-                st.error(f"Error: {e}")
+                st.error(f"Error procesando el video: {e}")
     else:
         st.warning("Por favor, introduce una URL válida.")
