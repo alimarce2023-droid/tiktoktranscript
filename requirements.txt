@@ -2,5 +2,3 @@ streamlit
 yt-dlp
 openai-whisper
 ffmpeg-python
-gspread
-oauth2client
