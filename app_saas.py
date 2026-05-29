@@ -1,78 +1,68 @@
 import streamlit as st
-import streamlit_authenticator as stauth
 import yt_dlp
 import whisper
 import os
-import gspread
-from oauth2client.service_account import ServiceAccountCredentials
 
-st.set_page_config(page_title="ProTranscribe SaaS", layout="wide")
+# Configuración de página
+st.set_page_config(page_title="ProTranscribe por Impulza Digital", layout="wide")
 
 # Estilos CSS
 st.markdown("""
-    <style>
-    .stApp { background-color: #000000; color: #FFFFFF; }
-    .stButton>button { background-color: #84139B; color: #FFFFFF; }
-    </style>
+    <style>
+    .stApp { background-color: #0d0d0d; color: #ffffff; }
+    h1 { color: #ffffff !important; text-transform: uppercase; }
+    .stTextInput label { color: #FFCC00 !important; font-weight: bold !important; }
+    .stButton>button { 
+        background-color: #ffc107 !important; 
+        color: #000000 !important; 
+        font-weight: 800 !important;
+        border-radius: 10px !important;
+        border: none !important;
+        padding: 15px !important;
+    }
+    .stTextInput>div>div>input {
+        background-color: #1a1a1a !important;
+        color: #ffffff !important;
+        border: 1px solid #5a189a !important;
+        border-radius: 10px !important;
+    }
+    </style>
 """, unsafe_allow_html=True)
 
-# 1. AUTENTICACIÓN
-config = {
-    'credentials': {
-        'usernames': {
-            'usuario1': {
-                'name': 'Tu Nombre',
-                'password': '123456'
-            }
-        }
-    },
-    'cookie': {'name': 'pro_transcribe', 'key': 'secret_key', 'expiry_days': 30}
-}
+st.title("ProTranscribe por Impulza Digital")
+st.write("Pega el enlace de un video y obtén la transcripción.")
 
-authenticator = stauth.Authenticate(
-    config['credentials'],
-    config['cookie']['name'],
-    config['cookie']['key'],
-    config['cookie']['expiry_days']
-)
+url_video = st.text_input("URL del video:")
 
-# Corrección: Usamos el método .login() directamente, 
-# si falla, es que la versión requiere el nombre del formulario explícito.
-try:
-    # Intento de login estándar
-    name, authentication_status, username = authenticator.login()
-except:
-    # Fallback para versiones anteriores
-    name, authentication_status, username = authenticator.login('Login', 'main')
-
-if authentication_status:
-    st.sidebar.write(f"Bienvenido, **{name}**")
-    
-    # 2. LÓGICA DE GOOGLE SHEETS
-    def guardar_lead(email):
-        scope = ["https://spreadsheets.google.com/feeds", 'https://www.googleapis.com/auth/spreadsheets']
-        creds = ServiceAccountCredentials.from_json_keyfile_name('credenciales.json', scope)
-        client = gspread.authorize(creds)
-        sheet = client.open("Leads_ProTranscribe").sheet1
-        sheet.append_row([email])
-
-    # 3. INTERFAZ
-    tab1, tab2 = st.tabs(["Nueva Transcripción", "Captar Leads"])
-    
-    with tab1:
-        url = st.text_input("URL del video:")
-        if st.button("Transcribir"):
-            st.write("Procesando video...")
-            
-    with tab2:
-        email = st.text_input("Correo del cliente:")
-        if st.button("Guardar en Sheets"):
-            try:
-                guardar_lead(email)
-                st.success("Correo guardado con éxito en la hoja de cálculo.")
-            except Exception as e:
-                st.error(f"Error al conectar con Google Sheets: {e}")
-
-elif authentication_status is False:
-    st.error("Usuario o contraseña incorrectos")
- 
+if st.button("Transcribir ahora"):
+    if url_video:
+        with st.spinner("Procesando... Esto puede tomar un minuto."):
+            try:
+                # Opciones más robustas
+                ydl_opts = {
+                    'format': 'bestaudio',
+                    'outtmpl': 'temp_audio.%(ext)s',
+                    'quiet': True,
+                    'no_warnings': True,
+                    'user_agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+                }
+                
+                with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+                    info = ydl.extract_info(url_video, download=True)
+                    filename = ydl.prepare_filename(info)
+                
+                # Carga y transcripción
+                model = whisper.load_model("base")
+                resultado = model.transcribe(filename)
+                
+                st.success("¡Transcripción lista!")
+                st.text_area("Resultado:", resultado["text"], height=300)
+                
+                if os.path.exists(filename):
+                    os.remove(filename)
+                    
+            except Exception as e:
+                st.error(f"Error técnico: {e}")
+                st.write("Si el error persiste, es posible que el sitio bloquee al servidor. Intenta con un video diferente.")
+    else:
+        st.warning("Por favor, introduce una URL válida.")
