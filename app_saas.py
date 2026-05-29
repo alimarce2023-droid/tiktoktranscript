@@ -6,13 +6,19 @@ import os
 # Configuración de página
 st.set_page_config(page_title="ProTranscribe por Impulza Digital", layout="wide")
 
-# Estilos CSS estilo Impulza Digital (Fondo oscuro, botones amarillos, bordes morados)
+# Estilos CSS estilo Impulza Digital
 st.markdown("""
     <style>
     .stApp { background-color: #0d0d0d; color: #ffffff; }
     
     /* Títulos */
     h1 { color: #ffffff !important; text-transform: uppercase; }
+    
+    /* Label de URL del video en Amarillo */
+    .stTextInput label {
+        color: #FFCC00 !important;
+        font-weight: bold !important;
+    }
     
     /* Botón Amarillo Estilo Impulza */
     .stButton>button { 
