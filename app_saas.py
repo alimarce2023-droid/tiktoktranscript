@@ -6,7 +6,7 @@ import gspread
 from oauth2client.service_account import ServiceAccountCredentials
 
 # Configuración inicial de la página
-st.set_page_config(page_title="ProTranscribe SaaS", layout="centered")
+st.set_page_config(page_title="Pro transcribe Impulza Digital", layout="centered")
 
 # Estilos CSS mejorados para un look tipo SaaS premium
 st.markdown("""
