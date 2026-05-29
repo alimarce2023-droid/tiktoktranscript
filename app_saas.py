@@ -1,49 +1,59 @@
-mport streamlit as st
+import streamlit as st
 import yt_dlp
 import whisper
 import os
 
-# Configuración de la página
-st.set_page_config(page_title="Universal Transcript AI", page_icon="🌐")
+# Configuración de página con diseño Impulza Digital
+st.set_page_config(page_title="ProTranscribe por Impulza Digital", layout="wide")
 
-st.title("🌐 Universal Transcript AI")
-st.write("Pega el enlace de un video y obtén la transcripción.")
+st.markdown("""
+    <style>
+    .stApp { background-color: #0d0d0d; color: #ffffff; }
+    h1 { color: #ffffff !important; text-transform: uppercase; }
+    .stButton>button { 
+        background-color: #ffc107 !important; 
+        color: #000000 !important; 
+        font-weight: 800 !important; 
+        border-radius: 10px !important; 
+        border: none !important;
+        padding: 15px !important;
+    }
+    .stTextInput>div>div>input { 
+        background-color: #1a1a1a !important; 
+        color: #ffffff !important; 
+        border: 1px solid #5a189a !important; 
+        border-radius: 10px !important; 
+    }
+    .stTextInput label { color: #FFCC00 !important; font-weight: bold !important; }
+    </style>
+""", unsafe_allow_html=True)
 
-url_video = st.text_input("URL del video:")
+st.title("ProTranscribe por Impulza Digital")
 
-if st.button("Transcribir ahora"):
-    if url_video:
-        with st.spinner("Procesando video... Esto puede tardar según la duración."):
-            try:
-                # Configuramos yt-dlp con mayor flexibilidad para YouTube
-                ydl_opts = {
-                    'format': 'bestaudio/best', 
-                    'outtmpl': 'temp_audio.%(ext)s',
-                    'quiet': True,
-                    'no_warnings': True,
-                    'user_agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
-                    'nocheckcertificate': True,
-                    'ignoreerrors': False,
-                }
-                
-                with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-                    info = ydl.extract_info(url_video, download=True)
-                    filename = ydl.prepare_filename(info)
-                
-                # Carga del modelo Whisper
-                model = whisper.load_model("base")
-                resultado = model.transcribe(filename)
-                
-                st.success("¡Transcripción lista!")
-                st.text_area("Resultado:", resultado["text"], height=300)
-                
-                # Limpieza
-                if os.path.exists(filename):
-                    os.remove(filename)
+def procesar_audio(archivo):
+    model = whisper.load_model("base")
+    resultado = model.transcribe(archivo)
+    return resultado["text"]
+
+tab1, tab2 = st.tabs(["📥 Descargar desde URL", "📁 Subir archivo (Plan B)"])
+
+with tab1:
+    url_video = st.text_input("URL del video:")
+    if st.button("Transcribir ahora"):
+        if url_video:
+            with st.spinner("Procesando video... Esto puede tardar según la duración."):
+                try:
+                    # Configuración funcional de yt-dlp
+                    ydl_opts = {
+                        'format': 'bestaudio/best', 
+                        'outtmpl': 'temp_audio.%(ext)s',
+                        'quiet': True,
+                        'no_warnings': True,
+                        'user_agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
+                        'nocheckcertificate': True,
+                        'ignoreerrors': False,
+                    }
                     
-            except Exception as e:
-                st.error(f"Error procesando el video: {e}")
-                st.write("YouTube puede bloquear el acceso a servidores de la nube. Si el error persiste, intenta con un enlace corto o asegúrate de que el video no tenga restricciones de edad.")
-    else:
-        st.warning("Por favor, introduce una URL válida.")
-
+                    with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+                        info = ydl.extract_info(url_video, download=True)
+                        filename = ydl.prepare_filename(info)
